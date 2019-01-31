@@ -3,13 +3,6 @@ from datetime import datetime
 
 def main():
 
-    #repo = Repo("resources")
-    #fifty_first_commits = list(repo.iter_commits('master', max_count=50))
-    #print(fifty_first_commits[0].author.name)
-    #print(fifty_first_commits[0].authored_date, int)
-    #print(fifty_first_commits[0].stats.total)
-    #commits_since = CommitObjectsSince(GetCommitObjects(count = 1000), "1 Jan 2019")
-
     BeginWritingToFile(CommitObjectsSince(GetCommitObjects(count = 1000), "1 Jan 2019"))
 
 def GetCommitObjects(directory = "resources", count = 50):
@@ -55,13 +48,60 @@ def DateComparison(normal_times, since_date, comp_idx, end):
 
 def BeginWritingToFile(commits):
 
-    fp = open("GitData.cvs", "w+")
+    WriteGitData(commits)
+    WriteMiscData(commits)
 
+
+def WriteGitData(commits):
+
+    fp = open("GitData.cvs", "w+")
     fp.write("insertions,deletions,lines,files,author_name,authored_date\n")
     for commit in commits:
         fp.write("%s,%s,%s,%s," % (commit.stats.total["insertions"], commit.stats.total["deletions"], commit.stats.total["lines"], commit.stats.total["files"]))
         fp.write("%s,%s\n" % (commit.author.name, str(datetime.fromtimestamp(commit.authored_date))))
+    fp.close()
+
+def WriteMiscData(commits):
+
+    fp = open("GitMiscData.cvs", "w+")
+    fp.write("author, total_commits\n")
+
+    authors = GetAllUniqueAuthors(commits)
+    commits_per_authors = CountCommitsPerAuthor(commits, authors)
+    for i in range(len(authors)):
+        fp.write("%s,%d\n" % (authors[i], commits_per_author[i]))
 
     fp.close()
+
+def GetAllUniqueAuthors(commits):
+
+    authors = [commits[0].author.name]
+    for commit in commits:
+
+        found_duplicate = False
+        for author in authors:
+
+            if commit.author.name != author:
+                continue
+            else:
+                found_duplicate = True
+                break
+
+        if found_duplicate == False:
+            authors.append(commit.author.name)
+
+    return authors
+
+def CountCommitsPerAuthor(commits, authors):
+
+    commits_per_author = []
+    for i in range(len(author)):
+
+        commits_per_author.append(0)
+        for commit in commits:
+            if commit.author.name == author[i]:
+                commits_per_author[i] += 1
+
+    return commits_per_author
 
 main()
