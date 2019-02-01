@@ -51,9 +51,9 @@ def SinceArgv(argv, i):
         print("No good since date")
         sys.exit(0)
 
-    date = argv[i+1] + " " + argv[i+2] + " " + argv[i+3]
-    directory = GetSecondaryCommand(argv, "-dir", "resources")
-    count = int(GetSecondaryCommand(argv, "-count", 1000))
+    date       = ConvertUserDate(argv[i+1] + " " + argv[i+2] + " " + argv[i+3])
+    directory  = GetSecondaryCommand(argv, "-dir", "resources")
+    count      = int(GetSecondaryCommand(argv, "-count", 1000))
     until_date = GetUntilArgv(argv)
 
     BeginWritingToFile(CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date))
@@ -69,11 +69,11 @@ def GetCommitObjects(directory = "resources", count = 1000):
 
 def CommitObjectsSince(commits, since_date):
 
-    return DiluteCommitObjects(commits, GetNormalTimeFromEpochTime(commits), ConvertUserDate(since_date))
+    return DiluteCommitObjectsSince(commits, GetNormalTimeFromEpochTime(commits), since_date)
 
 def CommitObjectsUntil(commits, until_date):
 
-    return commits
+    return DiluteCommitObjectsUntil(commits, GetNormalTimeFromEpochTime(commits), until_date)
 
 def ConvertUserDate(since_date):
 
@@ -99,9 +99,13 @@ def GetNormalTimeFromEpochTime(commits):
         normal_times.append(ConvertEpochDate(commit.authored_date))
     return normal_times
 
-def DiluteCommitObjects(commits, normal_times, since_date):
+def DiluteCommitObjectsSince(commits, normal_times, since_date):
 
     return commits[:DateSinceComparison(normal_times, since_date, 0, len(normal_times))]
+
+def DiluteCommitObjectsUntil(commits, normal_times, until_date):
+
+    return commits[DateUntilComparison(normal_times, until_date, 2, -1):]
 
 def DateSinceComparison(normal_times, since_date, comp_idx, end):
 
@@ -115,6 +119,25 @@ def DateSinceComparison(normal_times, since_date, comp_idx, end):
             return DateSinceComparison(normal_times, since_date, comp_idx + 1, i)
 
     return DateSinceComparison(normal_times, since_date, comp_idx + 1, end)
+
+def DateUntilComparison(normal_times, until_date, comp_idx, start):
+
+    if comp_idx < 0:
+        print(len(normal_times))
+        print(start)
+        return start+1
+
+    for i in range(len(normal_times)-1, 0, -1):
+
+        if normal_times[i][comp_idx] > until_date[comp_idx]:
+            if comp_idx != 2 and normal_times[i][comp_idx+1] < until_date[comp_idx+1]:
+                continue
+            elif comp_idx == 0 and normal_times[i][1] > until_date[1] and normal_times[i][2] < until_date[2]:
+                continue
+            return DateUntilComparison(normal_times, until_date, comp_idx - 1, i)
+
+    return DateUntilComparison(normal_times, until_date, comp_idx - 1, start)
+
 
 def BeginWritingToFile(commits):
 
