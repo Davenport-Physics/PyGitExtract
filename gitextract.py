@@ -1,13 +1,56 @@
 from git import Repo
 from datetime import datetime
+import sys
 
-def main():
+def main(argv):
 
-    BeginWritingToFile(CommitObjectsSince(GetCommitObjects(count = 1000), "1 Jan 2019"))
+    ParseArgv(argv)
+    
+
+def ParseArgv(argv):
+
+    func_dict = {"-since": SinceArgv}
+    for i in range(len(argv)):
+        try:
+            func_dict[argv[i]](argv, i)
+        except KeyError:
+            pass
+
+def GetSecondaryCommand(argv, command, default):
+
+    for i in range(len(argv)):
+        if argv[i] == command:
+            try:
+                return argv[i+1]
+            except:
+                print("Passed " + command + " command, but no data given")
+                sys.exit(0)
+
+    return default
+
+def GetDirIfPossible(argv):
+    return None
+
+
+def SinceArgv(argv, i):
+
+    if len(argv[i:]) < 3:
+        print("No Good Date")
+        return
+
+    date = argv[i+1] + " " + argv[i+2] + " " + argv[i+3]
+    directory = GetSecondaryCommand(argv, "-dir", "resources")
+    count = int(GetSecondaryCommand(argv, "-count", 1000))
+    BeginWritingToFile(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date))
+
 
 def GetCommitObjects(directory = "resources", count = 50):
 
-    return list(Repo(directory).iter_commits('master', max_count=count))
+    try:
+        return list(Repo(directory).iter_commits('master', max_count=count))
+    except:
+        print("Directory never specificed or default not found.")
+        sys.exit(0)
 
 def CommitObjectsSince(commits, since_date):
 
@@ -54,6 +97,7 @@ def BeginWritingToFile(commits):
 
 def WriteGitData(commits):
 
+    print("Writing Git Data cvs")
     fp = open("GitData.cvs", "w+")
     fp.write("insertions,deletions,lines,files,author_name,authored_date\n")
     for commit in commits:
@@ -63,11 +107,12 @@ def WriteGitData(commits):
 
 def WriteMiscData(commits):
 
+    print("Writing Git Misc Data cvs")
     fp = open("GitMiscData.cvs", "w+")
     fp.write("author, total_commits\n")
 
     authors = GetAllUniqueAuthors(commits)
-    commits_per_authors = CountCommitsPerAuthor(commits, authors)
+    commits_per_author = CountCommitsPerAuthor(commits, authors)
     for i in range(len(authors)):
         fp.write("%s,%d\n" % (authors[i], commits_per_author[i]))
 
@@ -95,13 +140,13 @@ def GetAllUniqueAuthors(commits):
 def CountCommitsPerAuthor(commits, authors):
 
     commits_per_author = []
-    for i in range(len(author)):
+    for i in range(len(authors)):
 
         commits_per_author.append(0)
         for commit in commits:
-            if commit.author.name == author[i]:
+            if commit.author.name == authors[i]:
                 commits_per_author[i] += 1
 
     return commits_per_author
 
-main()
+main(sys.argv)
