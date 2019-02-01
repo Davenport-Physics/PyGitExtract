@@ -109,12 +109,14 @@ def WriteMiscData(commits):
 
     print("Writing Git Misc Data cvs")
     fp = open("GitMiscData.cvs", "w+")
-    fp.write("author, total_commits\n")
+    fp.write("author,total_commits,insertions,deletions\n")
 
-    authors = GetAllUniqueAuthors(commits)
-    commits_per_author = CountCommitsPerAuthor(commits, authors)
+    authors               = GetAllUniqueAuthors(commits)
+    commits_per_author    = CountCommitsPerAuthor(commits, authors)
+    insertions_per_author = CountLOCChagesPerAuthor(commits, authors, "insertions")
+    deletions_per_author  = CountLOCChagesPerAuthor(commits, authors, "deletions")
     for i in range(len(authors)):
-        fp.write("%s,%d\n" % (authors[i], commits_per_author[i]))
+        fp.write("%s,%d,%d,%d\n" % (authors[i], commits_per_author[i], insertions_per_author[i], deletions_per_author[i]))
 
     fp.close()
 
@@ -148,5 +150,18 @@ def CountCommitsPerAuthor(commits, authors):
                 commits_per_author[i] += 1
 
     return commits_per_author
+
+def CountLOCChagesPerAuthor(commits, authors, loc_type):
+
+    locs = []
+    for i in range(len(authors)):
+
+        locs.append(0)
+        for commit in commits:
+            if commit.author.name == authors[i]:
+                locs[i] += commit.stats.total[loc_type]
+
+    return locs
+
 
 main(sys.argv)
