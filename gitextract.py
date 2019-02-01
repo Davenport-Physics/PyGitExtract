@@ -1,6 +1,7 @@
 from git import Repo
 from datetime import datetime
 import sys
+import time
 
 def main(argv):
 
@@ -28,6 +29,18 @@ def GetSecondaryCommand(argv, command, default):
 
     return default
 
+def GetUntilArgv(argv):
+
+    for i in range(len(argv)):
+        if argv[i] == "-until":
+            try:
+                return ConvertUserDate(argv[i+1] + " " + argv[i+2] + " " + argv[i+3])
+            except:
+                print("No good until date.")
+                sys.exit(0)
+
+    return ConvertEpochDate(time.time())
+
 def GetDirIfPossible(argv):
     return None
 
@@ -35,16 +48,18 @@ def GetDirIfPossible(argv):
 def SinceArgv(argv, i):
 
     if len(argv[i:]) < 3:
-        print("No Good Date")
-        return
+        print("No good since date")
+        sys.exit(0)
 
     date = argv[i+1] + " " + argv[i+2] + " " + argv[i+3]
     directory = GetSecondaryCommand(argv, "-dir", "resources")
     count = int(GetSecondaryCommand(argv, "-count", 1000))
-    BeginWritingToFile(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date))
+    until_date = GetUntilArgv(argv)
+
+    BeginWritingToFile(CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date))
 
 
-def GetCommitObjects(directory = "resources", count = 50):
+def GetCommitObjects(directory = "resources", count = 1000):
 
     try:
         return list(Repo(directory).iter_commits('master', max_count=count))
@@ -54,9 +69,13 @@ def GetCommitObjects(directory = "resources", count = 50):
 
 def CommitObjectsSince(commits, since_date):
 
-    return DiluteCommitObjects(commits, GetNormalTimeFromEpochTime(commits), ConvertSinceDate(since_date))
+    return DiluteCommitObjects(commits, GetNormalTimeFromEpochTime(commits), ConvertUserDate(since_date))
 
-def ConvertSinceDate(since_date):
+def CommitObjectsUntil(commits, until_date):
+
+    return commits
+
+def ConvertUserDate(since_date):
 
     dates = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5, "Jun":6, "Jul":7, "Aug":8, "Sep":9, "Oct":10, "Nov":11, "Dec":12}
     relevant_date = since_date.split(' ')
@@ -64,32 +83,38 @@ def ConvertSinceDate(since_date):
 
     return list(map(int, relevant_date))
 
+def ConvertEpochDate(epoch_date):
+
+    normal_time = str(datetime.fromtimestamp(epoch_date))
+    normal_time = normal_time.split(" ")[0].split("-")
+    normal_time.reverse()
+    normal_time = list(map(int, normal_time))
+
+    return normal_time
+
 def GetNormalTimeFromEpochTime(commits):
 
     normal_times = []
     for commit in commits:
-        normal_time = str(datetime.fromtimestamp(commit.authored_date))
-        normal_time = normal_time.split(" ")[0].split("-")
-        normal_time.reverse()
-        normal_times.append(list(map(int, normal_time)))
+        normal_times.append(ConvertEpochDate(commit.authored_date))
     return normal_times
 
 def DiluteCommitObjects(commits, normal_times, since_date):
 
-    return commits[:DateComparison(normal_times, since_date, 0, len(normal_times))]
+    return commits[:DateSinceComparison(normal_times, since_date, 0, len(normal_times))]
 
-def DateComparison(normal_times, since_date, comp_idx, end):
+def DateSinceComparison(normal_times, since_date, comp_idx, end):
 
     if comp_idx > 2:
         return end
 
     for i in range(len(normal_times)):
         if normal_times[i][comp_idx] < since_date[comp_idx]:
-            if comp_idx == 1 and normal_times[i][comp_idx+1] > since_date[comp_idx]:
+            if comp_idx != 2 and normal_times[i][2] > since_date[2]:
                 continue
-            return DateComparison(normal_times, since_date, comp_idx + 1, i)
+            return DateSinceComparison(normal_times, since_date, comp_idx + 1, i)
 
-    return DateComparison(normal_times, since_date, comp_idx + 1, end)
+    return DateSinceComparison(normal_times, since_date, comp_idx + 1, end)
 
 def BeginWritingToFile(commits):
 
