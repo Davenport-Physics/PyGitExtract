@@ -76,18 +76,20 @@ def GetNormalTimeFromEpochTime(commits):
 
 def DiluteCommitObjects(commits, normal_times, since_date):
 
-    return commits[:DateComparison(normal_times, since_date, 2, len(normal_times))]
+    return commits[:DateComparison(normal_times, since_date, 0, len(normal_times))]
 
 def DateComparison(normal_times, since_date, comp_idx, end):
 
-    if comp_idx < 0:
+    if comp_idx > 2:
         return end
 
-    for i in range(end):
+    for i in range(len(normal_times)):
         if normal_times[i][comp_idx] < since_date[comp_idx]:
-            return DateComparison(normal_times, since_date, comp_idx - 1, i)
+            if comp_idx == 1 and normal_times[i][comp_idx+1] > since_date[comp_idx]:
+                continue
+            return DateComparison(normal_times, since_date, comp_idx + 1, i)
 
-    return DateComparison(normal_times, since_date, comp_idx - 1, end)
+    return DateComparison(normal_times, since_date, comp_idx + 1, end)
 
 def BeginWritingToFile(commits):
 
@@ -102,7 +104,7 @@ def WriteGitData(commits):
     fp.write("insertions,deletions,lines,files,author_name,authored_date\n")
     for commit in commits:
         fp.write("%s,%s,%s,%s," % (commit.stats.total["insertions"], commit.stats.total["deletions"], commit.stats.total["lines"], commit.stats.total["files"]))
-        fp.write("%s,%s\n" % (commit.author.name, str(datetime.fromtimestamp(commit.authored_date))))
+        fp.write("%s,%s\n" % (commit.author.name, str(datetime.fromtimestamp(commit.authored_date)).split(" ")[0]))
     fp.close()
 
 def WriteMiscData(commits):
@@ -122,7 +124,7 @@ def WriteMiscData(commits):
 
 def GetAllUniqueAuthors(commits):
 
-    authors = [commits[0].author.name]
+    authors = []
     for commit in commits:
 
         found_duplicate = False
