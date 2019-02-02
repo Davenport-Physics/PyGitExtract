@@ -114,7 +114,9 @@ def DateSinceComparison(normal_times, since_date, comp_idx, end):
 
     for i in range(len(normal_times)):
         if normal_times[i][comp_idx] < since_date[comp_idx]:
-            if comp_idx != 2 and normal_times[i][comp_idx+1] > since_date[comp_idx+1]:
+            if comp_idx != 2 and normal_times[i][2] > since_date[2]:
+                continue
+            elif comp_idx != 2 and normal_times[i][comp_idx + 1] > since_date[comp_idx + 1]:
                 continue
             end.append(i)
             return DateSinceComparison(normal_times, since_date, comp_idx + 1, end)
