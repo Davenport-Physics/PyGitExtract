@@ -101,7 +101,7 @@ def GetNormalTimeFromEpochTime(commits):
 
 def DiluteCommitObjectsSince(commits, normal_times, since_date):
 
-    return commits[:DateSinceComparison(normal_times, since_date, 0, len(normal_times))]
+    return commits[:DateSinceComparison(normal_times, since_date, 0, [len(normal_times)])]
 
 def DiluteCommitObjectsUntil(commits, normal_times, until_date):
 
@@ -110,21 +110,20 @@ def DiluteCommitObjectsUntil(commits, normal_times, until_date):
 def DateSinceComparison(normal_times, since_date, comp_idx, end):
 
     if comp_idx > 2:
-        return end
+        return min(end)
 
     for i in range(len(normal_times)):
         if normal_times[i][comp_idx] < since_date[comp_idx]:
-            if comp_idx != 2 and normal_times[i][2] > since_date[2]:
+            if comp_idx != 2 and normal_times[i][comp_idx+1] > since_date[comp_idx+1]:
                 continue
-            return DateSinceComparison(normal_times, since_date, comp_idx + 1, i)
+            end.append(i)
+            return DateSinceComparison(normal_times, since_date, comp_idx + 1, end)
 
     return DateSinceComparison(normal_times, since_date, comp_idx + 1, end)
 
 def DateUntilComparison(normal_times, until_date, comp_idx, start):
 
     if comp_idx < 0:
-        print(len(normal_times))
-        print(start)
         return start+1
 
     for i in range(len(normal_times)-1, 0, -1):
