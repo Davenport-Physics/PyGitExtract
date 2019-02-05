@@ -2,6 +2,7 @@ from git import Repo
 from datetime import datetime
 import sys
 import time
+import sqlite3
 
 def main(argv):
 
@@ -29,6 +30,14 @@ def GetSecondaryCommand(argv, command, default):
 
     return default
 
+def GetRuntimeFunc(argv, command, default, true_func):
+
+    for i in range(len(argv)):
+        if argv[i] == command:
+            return true_func
+
+    return default
+
 def GetUntilArgv(argv):
 
     for i in range(len(argv)):
@@ -51,12 +60,13 @@ def SinceArgv(argv, i):
         print("No good since date")
         sys.exit(0)
 
-    date       = ConvertUserDate(argv[i+1] + " " + argv[i+2] + " " + argv[i+3])
-    directory  = GetSecondaryCommand(argv, "-dir", "resources")
-    count      = int(GetSecondaryCommand(argv, "-count", 1000))
-    until_date = GetUntilArgv(argv)
+    date         = ConvertUserDate(argv[i+1] + " " + argv[i+2] + " " + argv[i+3])
+    directory    = GetSecondaryCommand(argv, "-dir", "resources")
+    count        = int(GetSecondaryCommand(argv, "-count", 1000))
+    until_date   = GetUntilArgv(argv)
+    write_to     = GetRuntimeFunc(argv, "-sql", BeginWritingToFile, BeginWriteToSQLite)
 
-    BeginWritingToFile(CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date))
+    write_to(CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date))
 
 
 def GetCommitObjects(directory = "resources", count = 1000):
@@ -170,6 +180,47 @@ def WriteMiscData(commits):
         fp.write("%s,%d,%d,%d\n" % (authors[i], commits_per_author[i], insertions_per_author[i], deletions_per_author[i]))
 
     fp.close()
+
+def BeginWriteToSQLite(commits):
+    
+    WriteGitDataToSQLite(commits)
+    WriteMiscDataToSQLite(commits)
+
+def WriteGitDataToSQLite(commits):
+
+    connection = sqlite3.connect('GitData.db')
+    dbcursor   = connection.cursor()
+    dbcursor.execute(''' CREATE TABLE IF NOT EXISTS maindata 
+        (insertions integer, deletions integer, linesChanged integer, filesTouched integer, author text, authoredDate text) ''')
+
+    main_info = []
+    for commit in commits:
+        main_info.append((commit.stats.total["insertions"], commit.stats.total["deletions"], commit.stats.total["lines"], 
+            commit.stats.total["files"], commit.author.name, str(datetime.fromtimestamp(commit.authored_date)).split(" ")[0]))
+
+    dbcursor.executemany('INSERT INTO maindata VALUES (?,?,?,?,?,?)', main_info)
+    connection.commit()
+    connection.close()
+
+
+def WriteMiscDataToSQLite(commits):
+
+    connection = sqlite3.connect('GitData.db')
+    dbcursor   = connection.cursor()
+
+    dbcursor.execute(''' CREATE TABLE IF NOT EXISTS miscdata (author text, commits integer, insertions integer, deletions integer) ''')
+    authors               = GetAllUniqueAuthors(commits)
+    commits_per_author    = CountCommitsPerAuthor(commits, authors)
+    insertions_per_author = CountLOCChagesPerAuthor(commits, authors, "insertions")
+    deletions_per_author  = CountLOCChagesPerAuthor(commits, authors, "deletions")
+
+    misc_info = []
+    for i in range(len(authors)):
+        misc_info.append((authors[i], commits_per_author[i], insertions_per_author[i], deletions_per_author[i]))
+
+    dbcursor.executemany('INSERT INTO miscdata VALUES (?,?,?,?)', misc_info)
+    connection.commit()
+    connection.close()
 
 def GetAllUniqueAuthors(commits):
 
