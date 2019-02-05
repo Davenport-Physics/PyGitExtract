@@ -1,1 +1,1 @@
-** Required Python 3 and GitPython
+# Required Python 3 and GitPython
