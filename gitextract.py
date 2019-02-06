@@ -4,6 +4,9 @@ import sys
 import time
 import sqlite3
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 def main(argv):
 
     ParseArgv(argv)
@@ -38,6 +41,14 @@ def GetRuntimeFunc(argv, command, default, true_func):
 
     return default
 
+def SeeIfRuntimeCommandWasReceived(argv, command):
+
+    for i in range(len(argv)):
+        if argv[i] == command:
+            return True
+
+    return False
+
 def GetUntilArgv(argv):
 
     for i in range(len(argv)):
@@ -65,8 +76,11 @@ def SinceArgv(argv, i):
     count        = int(GetSecondaryCommand(argv, "-count", 1000))
     until_date   = GetUntilArgv(argv)
     write_to     = GetRuntimeFunc(argv, "-sql", BeginWritingToFile, BeginWriteToSQLite)
-
-    write_to(CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date))
+    should_plot  = SeeIfRuntimeCommandWasReceived(argv, "-plot")
+    commits      = CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date)
+    write_to(commits, SeeIfRuntimeCommandWasReceived(argv,"-droptables"))
+    if should_plot:
+        PlotAllData(commit)
 
 
 def GetCommitObjects(directory = "resources", count = 1000):
@@ -181,24 +195,36 @@ def WriteMiscData(commits):
 
     fp.close()
 
-def BeginWriteToSQLite(commits):
+def BeginWriteToSQLite(commits, drop_tables):
     
+    CheckIfDropTables(drop_tables)
     WriteGitDataToSQLite(commits)
     WriteMiscDataToSQLite(commits)
+
+def CheckIfDropTables(drop_tables):
+
+    if not drop_tables:
+        return None
+    connection = sqlite3.connect('GitData.db')
+    dbcursor   = connection.cursor()
+    dbcursor.execute(''' DROP TABLE IF EXISTS maindata ''')
+    dbcursor.execute(''' DROP TABLE IF EXISTS miscdata ''')
+    connection.commit()
+    connection.close()
 
 def WriteGitDataToSQLite(commits):
 
     connection = sqlite3.connect('GitData.db')
     dbcursor   = connection.cursor()
     dbcursor.execute(''' CREATE TABLE IF NOT EXISTS maindata 
-        (insertions integer, deletions integer, linesChanged integer, filesTouched integer, author text, authoredDate text) ''')
+        (insertions integer, deletions integer, linesChanged integer, filesTouched integer, author text, authoredDate text, message text, hexsha text) ''')
 
     main_info = []
     for commit in commits:
         main_info.append((commit.stats.total["insertions"], commit.stats.total["deletions"], commit.stats.total["lines"], 
-            commit.stats.total["files"], commit.author.name, str(datetime.fromtimestamp(commit.authored_date)).split(" ")[0]))
+            commit.stats.total["files"], commit.author.name, str(datetime.fromtimestamp(commit.authored_date)).split(" ")[0], commit.message, commit.hexsha))
 
-    dbcursor.executemany('INSERT INTO maindata VALUES (?,?,?,?,?,?)', main_info)
+    dbcursor.executemany('INSERT INTO maindata VALUES (?,?,?,?,?,?,?,?)', main_info)
     connection.commit()
     connection.close()
 
@@ -221,6 +247,10 @@ def WriteMiscDataToSQLite(commits):
     dbcursor.executemany('INSERT INTO miscdata VALUES (?,?,?,?)', misc_info)
     connection.commit()
     connection.close()
+
+def PlotAllData(commits):
+
+    return True
 
 def GetAllUniqueAuthors(commits):
 
