@@ -295,5 +295,19 @@ def CountLOCChagesPerAuthor(commits, authors, loc_type):
 
     return locs
 
+def GetCommitsPerAuthor(commits):
+
+    authors = GetAllUniqueAuthors(commits)
+
+    commits_for_every_author = []
+    for i in range(len(authors)):
+        commits_for_every_author.append([])
+        for commit in commits:
+            if commit.author.name == authors[i]:
+                commits_for_every_author[i].append(commit)
+
+    return commits_for_every_author
+
+
 
 main(sys.argv)
