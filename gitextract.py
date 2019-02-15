@@ -255,12 +255,8 @@ def PlotAllData(commits, date, until_date):
 
 def BarAuthorCommitsBarCharts(commits, date, until_date):
 
-    authors            = GetAllUniqueAuthors(commits)
-    commits_per_author = GetCommitsPerAuthor(commits)
-
-    total_commits_per_author = []
-    for i in range(len(commits_per_author)):
-        total_commits_per_author.append(len(commits_per_author[i]))
+    authors                  = GetAllUniqueAuthors(commits)
+    total_commits_per_author = GetTotalCommitsPerAuthor(commits)
 
     plt.bar(authors, total_commits_per_author)
     plt.xlabel("Authors")
@@ -272,15 +268,8 @@ def BarAuthorCommitsBarCharts(commits, date, until_date):
 
 def BarAuthorTotalLinesChanged(commits, date, until_date):
 
-    authors            = GetAllUniqueAuthors(commits)
-    commits_per_author = GetCommitsPerAuthor(commits)
-
-    total_lines_changed_per_author = []
-    for i in range(len(commits_per_author)):
-        lines_changed = 0
-        for commit in commits_per_author[i]:
-            lines_changed += commit.stats.total["lines"]
-        total_lines_changed_per_author.append(lines_changed)
+    authors                        = GetAllUniqueAuthors(commits)
+    total_lines_changed_per_author = GetTotalLinesChangedPerAuthor(commits)
 
     plt.bar(authors, total_lines_changed_per_author)
     plt.xlabel("Authors")
@@ -345,6 +334,26 @@ def GetCommitsPerAuthor(commits):
 
     return commits_for_every_author
 
+def GetTotalCommitsPerAuthor(commits):
 
+    commits_per_author = GetCommitsPerAuthor(commits)
+    total_commits_per_author = []
+    for i in range(len(commits_per_author)):
+        total_commits_per_author.append(len(commits_per_author[i]))
+
+    return total_commits_per_author
+
+def GetTotalLinesChangedPerAuthor(commits):
+
+    commits_per_author             = GetCommitsPerAuthor(commits)
+    total_lines_changed_per_author = []
+
+    for i in range(len(commits_per_author)):
+        lines_changed = 0
+        for commit in commits_per_author[i]:
+            lines_changed += commit.stats.total["lines"]
+        total_lines_changed_per_author.append(lines_changed)
+
+    return total_lines_changed_per_author
 
 main(sys.argv)
