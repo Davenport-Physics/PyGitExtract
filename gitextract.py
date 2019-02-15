@@ -261,7 +261,7 @@ def BarAuthorCommitsBarCharts(commits, date, until_date):
     plt.bar(authors, total_commits_per_author)
     plt.xlabel("Authors")
     plt.ylabel("Commits")
-    plt.title("Commits per author since %d/%d/%d until %d/%d/%d" % (date[0], date[1], date[2], until_date[0], until_date[1], until_date[0]))
+    plt.title("Commits per author since %d/%d/%d until %d/%d/%d" % (date[0], date[1], date[2], until_date[0], until_date[1], until_date[2]))
     plt.savefig("authorbarchart.png", dpi=300)
     plt.clf()
     #plt.show()
@@ -274,7 +274,7 @@ def BarAuthorTotalLinesChanged(commits, date, until_date):
     plt.bar(authors, total_lines_changed_per_author)
     plt.xlabel("Authors")
     plt.ylabel("Lines changed")
-    plt.title("Lines changed per author since %d/%d/%d until %d/%d/%d" % (date[0], date[1], date[2], until_date[0], until_date[1], until_date[0]))
+    plt.title("Lines changed per author since %d/%d/%d until %d/%d/%d" % (date[0], date[1], date[2], until_date[0], until_date[1], until_date[2]))
     plt.savefig("authorlineschangedbarchart.png", dpi=300)
     plt.clf()
 
