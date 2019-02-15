@@ -80,7 +80,7 @@ def SinceArgv(argv, i):
     commits      = CommitObjectsUntil(CommitObjectsSince(GetCommitObjects(directory = directory, count = count), date), until_date)
     write_to(commits, SeeIfRuntimeCommandWasReceived(argv,"-droptables"))
     if should_plot:
-        PlotAllData(commit)
+        PlotAllData(commits, date, until_date)
 
 
 def GetCommitObjects(directory = "resources", count = 1000):
@@ -248,9 +248,46 @@ def WriteMiscDataToSQLite(commits):
     connection.commit()
     connection.close()
 
-def PlotAllData(commits):
+def PlotAllData(commits, date, until_date):
 
-    return True
+    BarAuthorCommitsBarCharts(commits, date, until_date)
+    BarAuthorTotalLinesChanged(commits, date, until_date)
+
+def BarAuthorCommitsBarCharts(commits, date, until_date):
+
+    authors            = GetAllUniqueAuthors(commits)
+    commits_per_author = GetCommitsPerAuthor(commits)
+
+    total_commits_per_author = []
+    for i in range(len(commits_per_author)):
+        total_commits_per_author.append(len(commits_per_author[i]))
+
+    plt.bar(authors, total_commits_per_author)
+    plt.xlabel("Authors")
+    plt.ylabel("Commits")
+    plt.title("Commits per author since %d/%d/%d until %d/%d/%d" % (date[0], date[1], date[2], until_date[0], until_date[1], until_date[0]))
+    plt.savefig("authorbarchart.png", dpi=300)
+    plt.clf()
+    #plt.show()
+
+def BarAuthorTotalLinesChanged(commits, date, until_date):
+
+    authors            = GetAllUniqueAuthors(commits)
+    commits_per_author = GetCommitsPerAuthor(commits)
+
+    total_lines_changed_per_author = []
+    for i in range(len(commits_per_author)):
+        lines_changed = 0
+        for commit in commits_per_author[i]:
+            lines_changed += commit.stats.total["lines"]
+        total_lines_changed_per_author.append(lines_changed)
+
+    plt.bar(authors, total_lines_changed_per_author)
+    plt.xlabel("Authors")
+    plt.ylabel("Lines changed")
+    plt.title("Lines changed per author since %d/%d/%d until %d/%d/%d" % (date[0], date[1], date[2], until_date[0], until_date[1], until_date[0]))
+    plt.savefig("authorlineschangedbarchart.png", dpi=300)
+    plt.clf()
 
 def GetAllUniqueAuthors(commits):
 
